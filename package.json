@@ -1,0 +1,45 @@
+{
+  "name": "construct-pro-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CONSTRUCT PRO — Professional Construction Estimation, BOQ & Project Management Platform",
+  "scripts": {
+    "dev:client": "vite",
+    "dev:server": "ts-node-dev --respawn server/src/index.ts",
+    "build:client": "tsc && vite build",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev --name init",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.19.0",
+    "@hookform/resolvers": "^3.9.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.8.2",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.436.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.53.0",
+    "recharts": "^2.12.7",
+    "zod": "^3.23.8",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "prisma": "^5.19.0",
+    "tailwindcss": "^3.4.10",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.2",
+    "vitest": "^2.0.5"
+  }
+}

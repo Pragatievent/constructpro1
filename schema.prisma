@@ -1,0 +1,273 @@
+// Prisma Schema for CONSTRUCT PRO
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  fullName     String
+  companyName  String?
+  role         Role      @default(ESTIMATOR)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  projects     Project[]
+  rates        RateItem[]
+}
+
+enum Role {
+  ADMIN
+  ESTIMATOR
+  PROJECT_MANAGER
+  VIEWER
+}
+
+enum ConstructionType {
+  RESIDENTIAL
+  COMMERCIAL
+}
+
+enum StructureType {
+  RCC_FRAMED
+  LOAD_BEARING
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  COMPLETED
+  ON_HOLD
+}
+
+model Project {
+  id               String           @id @default(uuid())
+  name             String
+  clientName       String
+  location         String
+  constructionType ConstructionType @default(RESIDENTIAL)
+  structureType    StructureType    @default(RCC_FRAMED)
+  floors           Int              @default(1)
+  plotLength       Float            @default(0)
+  plotWidth        Float            @default(0)
+  builtUpArea      Float            @default(0)
+  startDate        DateTime
+  description      String?
+  status           ProjectStatus    @default(ACTIVE)
+  progress         Float            @default(0)
+  
+  // Costing Overheads & Markups (%)
+  transportationPct Float           @default(2.0)
+  miscExpensePct    Float           @default(1.5)
+  wastagePct        Float           @default(3.0)
+  profitPct         Float           @default(10.0)
+  contingencyPct    Float           @default(3.0)
+  gstPct            Float           @default(18.0)
+
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  rooms            RoomDimension[]
+  rccMembers       RccMember[]
+  steelEntries     SteelEntry[]
+  masonryWalls     MasonryWall[]
+  flooringEntries  FlooringEntry[]
+  plasterEntries   PlasterEntry[]
+  paintingEntries  PaintingEntry[]
+  mepItems         MepItem[]
+  labourEntries    LabourEntry[]
+  customMaterials  CustomMaterial[]
+  boqItems         BoqItem[]
+  historyLogs      ProjectHistory[]
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model RoomDimension {
+  id          String  @id @default(uuid())
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  floorNumber Int     @default(1)
+  length      Float
+  width       Float
+  height      Float
+  wallThickness Float @default(0.75) // in feet
+  count       Int     @default(1)
+}
+
+model RccMember {
+  id          String  @id @default(uuid())
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  category    String  // Footing, Column, Beam, Slab, Staircase, Lintel
+  label       String
+  length      Float   // in meters or feet
+  width       Float
+  depth       Float
+  quantity    Int     @default(1)
+  grade       String  @default("M20") // M15, M20, M25, M30
+  dryFactor   Float   @default(1.54)
+}
+
+model SteelEntry {
+  id          String  @id @default(uuid())
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  memberName  String
+  structuralElement String // Footing, Column, Beam, Slab
+  diameterMm  Float   // 8, 10, 12, 16, 20, 25, 32
+  barLengthM  Float
+  barsPerMember Int
+  spacingMm   Float   @default(150)
+  memberCount Int     @default(1)
+  wastagePct  Float   @default(5.0)
+}
+
+model MasonryWall {
+  id            String  @id @default(uuid())
+  projectId     String
+  project       Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  label         String
+  unitType      String  @default("BRICK") // BRICK, AAC_BLOCK, CONCRETE_BLOCK
+  wallLengthM   Float
+  wallHeightM   Float
+  wallThicknessM Float  @default(0.23)
+  doorAreaSqm   Float   @default(0)
+  windowAreaSqm Float   @default(0)
+  unitLengthMm  Float   @default(190)
+  unitWidthMm   Float   @default(90)
+  unitHeightMm  Float   @default(90)
+  mortarJointMm Float   @default(10)
+  mixRatioCement Float  @default(1)
+  mixRatioSand   Float  @default(6)
+}
+
+model FlooringEntry {
+  id          String  @id @default(uuid())
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  roomName    String
+  lengthFt    Float
+  widthFt     Float
+  tileLengthFt Float  @default(2)
+  tileWidthFt  Float  @default(2)
+  wastagePct  Float   @default(5)
+  materialType String @default("Vitrified Tiles")
+}
+
+model PlasterEntry {
+  id          String  @id @default(uuid())
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  surfaceName String
+  type        String  @default("INTERNAL") // INTERNAL, EXTERNAL
+  areaSqm     Float
+  thicknessMm Float   @default(12)
+  mixRatioSand Float  @default(4) // 1:4 or 1:6
+}
+
+model PaintingEntry {
+  id          String  @id @default(uuid())
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  surfaceName String
+  areaSqft    Float
+  coats       Int     @default(2)
+  primerCoats Int     @default(1)
+}
+
+model MepItem {
+  id          String  @id @default(uuid())
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  system      String  // PLUMBING, ELECTRICAL
+  category    String  // Pipes, Fittings, Taps, Sanitary, Wires, Switches, Sockets, Lights, DB
+  description String
+  unit        String
+  quantity    Float
+  unitRate    Float
+  labourRate  Float   @default(0)
+}
+
+model LabourEntry {
+  id          String  @id @default(uuid())
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  category    String  // Mason, Helper, Carpenter, Steel Fixer, Electrician, Plumber, Painter, Tile Worker
+  mode        String  @default("DAILY") // DAILY, UNIT_RATE
+  workers     Int     @default(1)
+  dailyWage   Float   @default(800)
+  workingDays Float   @default(10)
+  overtimeHours Float @default(0)
+  overtimeRate  Float @default(100)
+  unitQuantity  Float @default(0)
+  unitRate      Float @default(0)
+}
+
+model CustomMaterial {
+  id          String  @id @default(uuid())
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  category    String
+  name        String
+  unit        String
+  quantity    Float
+  wastagePct  Float   @default(3)
+  rate        Float
+}
+
+model BoqItem {
+  id           String  @id @default(uuid())
+  projectId    String
+  project      Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  itemNumber   String
+  description  String
+  category     String
+  unit         String
+  quantity     Float
+  materialRate Float
+  labourRate   Float
+  isAutoSynced Boolean @default(true)
+}
+
+model RateItem {
+  id          String   @id @default(uuid())
+  category    String   // Cement, Sand, Aggregate, Steel, Bricks, Blocks, Tiles, Paint, Labour, Transportation, Miscellaneous
+  name        String
+  unit        String
+  rateInr     Float
+  isDefault   Boolean  @default(true)
+  projectId   String?
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  updatedAt   DateTime @updatedAt
+  history     RateHistory[]
+}
+
+model RateHistory {
+  id          String   @id @default(uuid())
+  rateItemId  String
+  rateItem    RateItem @relation(fields: [rateItemId], references: [id], onDelete: Cascade)
+  oldRateInr  Float
+  newRateInr  Float
+  changedAt   DateTime @default(now())
+  note        String?
+}
+
+model ProjectHistory {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  action      String
+  details     String
+  timestamp   DateTime @default(now())
+}
